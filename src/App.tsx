@@ -6,7 +6,7 @@ import Questionnaire from './components/Questionnaire';
 import Charts from './components/Charts.tsx';
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [currentView, setCurrentView] = useState<'dashboard' | 'questionnaire' | 'charts'>('dashboard');
 
   if (loading) {
@@ -53,6 +53,18 @@ function AppContent() {
                 New Snapshot
               </button>
             </nav>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ color: '#6b7280', fontSize: '14px' }}>
+                {user?.email}
+              </span>
+              <button 
+                onClick={logout}
+                className="btn btn-secondary"
+                style={{ fontSize: '14px', padding: '6px 12px' }}
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>
