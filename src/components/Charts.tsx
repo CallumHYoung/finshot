@@ -19,7 +19,8 @@ export default function Charts() {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) {
-          if (response.status === 401) {
+          if (response.status === 401 || response.status === 403) {
+            console.log('Token expired or invalid, logging out');
             logout();
             return;
           }
@@ -56,7 +57,12 @@ export default function Charts() {
         setLoading(false);
       }
     };
-    fetchSnapshots();
+
+    if (token) {
+      fetchSnapshots();
+    } else {
+      setLoading(false);
+    }
   }, [token, logout]);
 
   if (loading) {

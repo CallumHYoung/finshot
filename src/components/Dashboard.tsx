@@ -15,8 +15,12 @@ export default function Dashboard() {
   const [showSparkline, setShowSparkline] = useState(false);
 
   useEffect(() => {
-    fetchSnapshots();
-  }, []);
+    if (token) {
+      fetchSnapshots();
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
 
   const fetchSnapshots = async () => {
     try {
@@ -27,7 +31,8 @@ export default function Dashboard() {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
+          console.log('Token expired or invalid, logging out');
           logout();
           return;
         }
