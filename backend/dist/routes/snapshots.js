@@ -117,11 +117,26 @@ router.post('/', authenticateToken, async (req, res) => {
         const totalLiabilities = totals.liabilitiesTotal;
         const totalNetWorth = totals.netWorth;
         const previousSnapshot = await database.get('SELECT * FROM snapshots WHERE user_id = ? AND date < ? ORDER BY date DESC LIMIT 1', [userId, date]);
+        // Get previous accounts if previous snapshot exists
+        let previousAccounts = undefined;
+        if (previousSnapshot) {
+            const previousAccountsData = await database.all('SELECT * FROM accounts WHERE snapshot_id = ?', [previousSnapshot.id]);
+            previousAccounts = previousAccountsData.map(row => ({
+                id: row.id,
+                name: row.name,
+                type: row.type,
+                balance: row.balance,
+                categoryId: row.category_id,
+                userId: row.user_id,
+                snapshotId: row.snapshot_id
+            }));
+        }
         const metrics = calculateMetrics({
             currentNetWorth: totalNetWorth,
             previousNetWorth: previousSnapshot?.total_net_worth,
             hoursInMonth,
-            accounts
+            accounts,
+            previousAccounts
         });
         await database.run(`INSERT INTO snapshots (
         id, user_id, date, total_net_worth, total_assets, total_liabilities,

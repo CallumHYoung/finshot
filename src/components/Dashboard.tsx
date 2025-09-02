@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Snapshot } from '../types';
 import SnapshotsList from './SnapshotsList';
 import Sparkline from './charts/Sparkline.tsx';
+import { computeTotals, buildCategoriesById, calculateConsistentMetrics } from '../utils/finance';
 // Backend now handles totals computation
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -15,8 +16,12 @@ export default function Dashboard() {
   const [showSparkline, setShowSparkline] = useState(false);
 
   useEffect(() => {
-    fetchSnapshots();
-  }, []);
+    if (token) {
+      fetchSnapshots();
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
 
   const fetchSnapshots = async () => {
     try {
@@ -27,7 +32,8 @@ export default function Dashboard() {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
+          console.log('Token expired or invalid, logging out');
           logout();
           return;
         }
@@ -137,17 +143,19 @@ export default function Dashboard() {
   }
 
   const latestSnapshot = snapshots[0];
-  // Backend now provides recomputed totals
-  // Backend now recomputes totals, so use those directly
-  const latestTotals = {
-    assetsTotal: latestSnapshot.totalAssets,
-    liabilitiesTotal: latestSnapshot.totalLiabilities, 
-    netWorth: latestSnapshot.totalNetWorth
-  };
-  const metadata = (latestSnapshot.metadata ?? {}) as typeof latestSnapshot.metadata;
-  const monthlyGain = typeof metadata?.monthlyGain === 'number' ? metadata.monthlyGain : undefined;
-  const dollarsPerHour = typeof metadata?.dollarsPerHour === 'number' ? metadata.dollarsPerHour : undefined;
-  const portfolioChange = typeof metadata?.portfolioChange === 'number' ? metadata.portfolioChange : undefined;
+  const categoriesById = buildCategoriesById();
+  
+  // Recalculate totals using consistent logic (same as SnapshotsList)
+  const latestAccounts = Array.isArray(latestSnapshot.accounts) ? latestSnapshot.accounts : [];
+  const latestTotals = computeTotals(latestAccounts, categoriesById);
+  
+  // Calculate all metrics consistently using the new utility function
+  const previousSnapshot = snapshots.length >= 2 ? snapshots[1] : undefined;
+  const consistentMetrics = calculateConsistentMetrics(latestSnapshot, previousSnapshot, categoriesById);
+  
+  const monthlyGain = consistentMetrics.monthlyGain;
+  const dollarsPerHour = consistentMetrics.dollarsPerHour;
+  const portfolioChange = consistentMetrics.portfolioChange;
  
    return (
      <div>

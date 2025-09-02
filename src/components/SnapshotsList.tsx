@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Snapshot, Account } from '../types';
 // categories imported via finance utils
-import { buildCategoriesById, computeTotals, isLiabilityAccount } from '../utils/finance';
+import { buildCategoriesById, computeTotals, isLiabilityAccount, calculateConsistentMetrics } from '../utils/finance';
 
 interface SnapshotsListProps {
   snapshots: Snapshot[];
@@ -41,9 +41,12 @@ export default function SnapshotsList({ snapshots, onDelete }: SnapshotsListProp
         const previousSnapshot = snapshots[index + 1];
         const isGain = previousSnapshot ? snapshot.totalNetWorth > previousSnapshot.totalNetWorth : true;
         const md = (snapshot as any).metadata || {};
-        const mg = typeof md.monthlyGain === 'number' ? md.monthlyGain : undefined;
-        const dph = typeof md.dollarsPerHour === 'number' ? md.dollarsPerHour : undefined;
-        const pc = typeof md.portfolioChange === 'number' ? md.portfolioChange : undefined;
+        
+        // Calculate all metrics consistently using the new utility function
+        const consistentMetrics = calculateConsistentMetrics(snapshot, previousSnapshot, categoriesById);
+        const mg = consistentMetrics.monthlyGain;
+        const dph = consistentMetrics.dollarsPerHour;
+        const pc = consistentMetrics.portfolioChange;
         const isExpanded = !!expanded[snapshot.id];
 
         const groupByCategory = (accounts: Account[]) => {
