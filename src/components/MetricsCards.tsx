@@ -1,5 +1,6 @@
 
 import { Snapshot } from '../types';
+import { buildCategoriesById, calculateConsistentMetrics } from '../utils/finance';
 
 interface MetricsCardsProps {
   latestSnapshot: Snapshot;
@@ -7,6 +8,8 @@ interface MetricsCardsProps {
 }
 
 export default function MetricsCards({ latestSnapshot, previousSnapshot }: MetricsCardsProps) {
+  const categoriesById = buildCategoriesById();
+  
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -27,6 +30,10 @@ export default function MetricsCards({ latestSnapshot, previousSnapshot }: Metri
       formatted: `${isPositive ? '+' : ''}${formatCurrency(change)}`
     };
   };
+
+  // Calculate all metrics consistently using the new utility function
+  const consistentMetrics = calculateConsistentMetrics(latestSnapshot, previousSnapshot, categoriesById);
+  const monthlyGain = consistentMetrics.monthlyGain;
 
   const netWorthChange = formatChange(latestSnapshot.totalNetWorth, previousSnapshot?.totalNetWorth);
   const assetsChange = formatChange(latestSnapshot.totalAssets, previousSnapshot?.totalAssets);
@@ -76,19 +83,19 @@ export default function MetricsCards({ latestSnapshot, previousSnapshot }: Metri
         )}
       </div>
 
-      {latestSnapshot.metadata.dollarsPerHour !== undefined && (
+      {consistentMetrics.dollarsPerHour !== undefined && (
         <div className="stat-card" style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' }}>
-          <div className="stat-value">${latestSnapshot.metadata.dollarsPerHour.toFixed(2)}</div>
+          <div className="stat-value">${consistentMetrics.dollarsPerHour.toFixed(2)}</div>
           <div className="stat-label">Dollars Per Hour</div>
           <div style={{ fontSize: '14px', marginTop: '8px', opacity: 0.9 }}>
-            Based on {latestSnapshot.metadata.hoursInMonth} hours
+            Based on {latestSnapshot.metadata?.hoursInMonth || 744} hours
           </div>
         </div>
       )}
 
-      {latestSnapshot.metadata.portfolioChange !== undefined && (
+      {consistentMetrics.portfolioChange !== undefined && (
         <div className="stat-card" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>
-          <div className="stat-value">{latestSnapshot.metadata.portfolioChange.toFixed(2)}%</div>
+          <div className="stat-value">{consistentMetrics.portfolioChange.toFixed(2)}%</div>
           <div className="stat-label">Portfolio Change</div>
           <div style={{ fontSize: '14px', marginTop: '8px', opacity: 0.9 }}>
             Investment performance
@@ -96,14 +103,14 @@ export default function MetricsCards({ latestSnapshot, previousSnapshot }: Metri
         </div>
       )}
 
-      {latestSnapshot.metadata.monthlyGain !== undefined && (
+      {monthlyGain !== undefined && (
         <div className="stat-card" style={{ 
-          background: latestSnapshot.metadata.monthlyGain >= 0 ? 
+          background: monthlyGain >= 0 ? 
             'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 
             'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
         }}>
           <div className="stat-value">
-            {latestSnapshot.metadata.monthlyGain >= 0 ? '+' : ''}{formatCurrency(latestSnapshot.metadata.monthlyGain)}
+            {monthlyGain >= 0 ? '+' : ''}{formatCurrency(monthlyGain)}
           </div>
           <div className="stat-label">Monthly Gain/Loss</div>
           <div style={{ fontSize: '14px', marginTop: '8px', opacity: 0.9 }}>

@@ -5,6 +5,7 @@ interface MetricsInput {
   previousNetWorth?: number;
   hoursInMonth: number;
   accounts: Account[];
+  previousAccounts?: Account[];
 }
 
 interface CalculatedMetrics {
@@ -14,7 +15,7 @@ interface CalculatedMetrics {
 }
 
 export function calculateMetrics(input: MetricsInput): CalculatedMetrics {
-  const { currentNetWorth, previousNetWorth, hoursInMonth, accounts } = input;
+  const { currentNetWorth, previousNetWorth, hoursInMonth, accounts, previousAccounts } = input;
   
   const metrics: CalculatedMetrics = {};
 
@@ -26,18 +27,22 @@ export function calculateMetrics(input: MetricsInput): CalculatedMetrics {
     }
   }
 
-  const investmentAccounts = accounts.filter(account => 
+  // Calculate portfolio change using proper percentage formula
+  const currentInvestmentAccounts = accounts.filter(account => 
     account.type === 'investment' || account.type === 'retirement'
   );
 
-  if (investmentAccounts.length > 0) {
-    const totalInvestmentValue = investmentAccounts.reduce((sum, account) => sum + account.balance, 0);
+  if (previousAccounts && (currentInvestmentAccounts.length > 0)) {
+    const previousInvestmentAccounts = previousAccounts.filter(account => 
+      account.type === 'investment' || account.type === 'retirement'
+    );
+
+    const currentInvestmentValue = currentInvestmentAccounts.reduce((sum, account) => sum + account.balance, 0);
+    const previousInvestmentValue = previousInvestmentAccounts.reduce((sum, account) => sum + account.balance, 0);
     
-    if (previousNetWorth !== undefined && metrics.monthlyGain !== undefined) {
-      const investmentGain = metrics.monthlyGain;
-      if (totalInvestmentValue > 0) {
-        metrics.portfolioChange = (investmentGain / totalInvestmentValue) * 100;
-      }
+    if (previousInvestmentValue > 0) {
+      // Portfolio change = (new - old) / old * 100
+      metrics.portfolioChange = ((currentInvestmentValue - previousInvestmentValue) / previousInvestmentValue) * 100;
     }
   }
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { AccountCategory, Account, QuestionnaireState, Snapshot } from '../types';
+import { AccountCategory, Account, AccountType, QuestionnaireState, Snapshot } from '../types';
 import { accountCategories } from '../data/categories';
+import { computeTotals } from '../utils/finance';
 
 interface QuestionnaireProps {
   onComplete: () => void;
@@ -78,11 +79,11 @@ export default function Questionnaire({ onComplete }: QuestionnaireProps) {
           setPreviousSnapshot(snapshotWithAccounts);
           
           // Pre-fill state with previous data
-          const usedCategories = [...new Set(normalizedAccounts.map(acc => acc.categoryId))];
+          const usedCategories = [...new Set(normalizedAccounts.map((acc: Account) => acc.categoryId))].filter((id): id is string => typeof id === 'string');
           setState(prev => ({
             ...prev,
             selectedCategories: usedCategories,
-            accounts: normalizedAccounts.map(acc => ({
+            accounts: normalizedAccounts.map((acc: Account) => ({
               ...acc,
               id: Date.now().toString() + Math.random().toString(36).substr(2, 9) // New ID for new snapshot
             }))
@@ -498,15 +499,8 @@ export default function Questionnaire({ onComplete }: QuestionnaireProps) {
   };
 
   const renderReviewStep = () => {
-    const totalAssets = state.accounts
-      .filter(acc => ['checking', 'savings', 'investment', 'retirement', 'real-estate', 'vehicle', 'other-asset'].includes(acc.type))
-      .reduce((sum, acc) => sum + acc.balance, 0);
-
-    const totalLiabilities = state.accounts
-      .filter(acc => ['credit-card', 'loan', 'mortgage', 'other-liability'].includes(acc.type))
-      .reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
-
-    const netWorth = totalAssets - totalLiabilities;
+    // Use the standardized finance utility functions for consistency
+    const { assetsTotal, liabilitiesTotal, netWorth } = computeTotals(state.accounts);
 
     return (
       <div className="questionnaire-step">
@@ -515,11 +509,11 @@ export default function Questionnaire({ onComplete }: QuestionnaireProps) {
           
           <div className="stats-grid" style={{ margin: '24px 0' }}>
             <div className="stat-card" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
-              <div className="stat-value">${totalAssets.toLocaleString()}</div>
+              <div className="stat-value">${assetsTotal.toLocaleString()}</div>
               <div className="stat-label">Total Assets</div>
             </div>
             <div className="stat-card" style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}>
-              <div className="stat-value">${totalLiabilities.toLocaleString()}</div>
+              <div className="stat-value">${liabilitiesTotal.toLocaleString()}</div>
               <div className="stat-label">Total Liabilities</div>
             </div>
             <div className="stat-card" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
@@ -636,10 +630,33 @@ function CategoryAccountEntry({ category, accounts, onAccountsChange, isNewAccou
   }, [localAccounts, onAccountsChange]);
 
   const addAccount = () => {
+    // Map category to specific account type
+    const getAccountTypeFromCategory = (categoryId: string, isLiability: boolean): AccountType => {
+      if (isLiability) {
+        switch (categoryId) {
+          case 'credit-cards': return 'credit-card';
+          case 'loans': return 'loan';
+          case 'mortgages': return 'mortgage';
+          case 'other-liabilities': return 'other-liability';
+          default: return 'other-liability';
+        }
+      } else {
+        switch (categoryId) {
+          case 'cash': return 'checking'; // Default bank accounts to checking
+          case 'investments': return 'investment';
+          case 'retirement': return 'retirement';
+          case 'real-estate': return 'real-estate';
+          case 'vehicles': return 'vehicle';
+          case 'other-assets': return 'other-asset';
+          default: return 'other-asset';
+        }
+      }
+    };
+
     const newAccount: Account = {
       id: Date.now().toString(),
       name: '',
-      type: category.type === 'liability' ? 'other-liability' : 'other-asset',
+      type: getAccountTypeFromCategory(category.id, category.type === 'liability'),
       balance: 0,
       categoryId: category.id
     };
@@ -648,9 +665,16 @@ function CategoryAccountEntry({ category, accounts, onAccountsChange, isNewAccou
 
   const updateAccount = (id: string, field: keyof Account, value: string | number) => {
     setLocalAccounts(accounts =>
-      accounts.map(acc =>
-        acc.id === id ? { ...acc, [field]: value } : acc
-      )
+      accounts.map(acc => {
+        if (acc.id === id) {
+          // Auto-convert negative values to positive for liability accounts
+          if (field === 'balance' && category.type === 'liability' && typeof value === 'number' && value < 0) {
+            value = Math.abs(value);
+          }
+          return { ...acc, [field]: value };
+        }
+        return acc;
+      })
     );
   };
 
@@ -667,7 +691,7 @@ function CategoryAccountEntry({ category, accounts, onAccountsChange, isNewAccou
 
       {localAccounts.map(account => (
         <div key={account.id} className="account-entry">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px auto', gap: '12px', alignItems: 'end' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: category.id === 'cash' ? '1fr 120px 150px auto' : '1fr 150px auto', gap: '12px', alignItems: 'end' }}>
             <div>
               <label className="form-label">Account Name</label>
               <input
@@ -681,6 +705,19 @@ function CategoryAccountEntry({ category, accounts, onAccountsChange, isNewAccou
                 onChange={(e) => updateAccount(account.id, 'name', e.target.value)}
               />
             </div>
+            {category.id === 'cash' && (
+              <div>
+                <label className="form-label">Account Type</label>
+                <select
+                  className="form-input"
+                  value={account.type}
+                  onChange={(e) => updateAccount(account.id, 'type', e.target.value as AccountType)}
+                >
+                  <option value="checking">Checking</option>
+                  <option value="savings">Savings</option>
+                </select>
+              </div>
+            )}
             <div>
               <label className="form-label">
                 {category.type === 'liability' ? 'Amount Owed' : 'Balance'}
@@ -726,9 +763,16 @@ function ExistingAccountsEntry({ category, accounts, previousAccounts, onAccount
 
   const updateAccount = (id: string, field: keyof Account, value: string | number) => {
     setLocalAccounts(accounts =>
-      accounts.map(acc =>
-        acc.id === id ? { ...acc, [field]: value } : acc
-      )
+      accounts.map(acc => {
+        if (acc.id === id) {
+          // Auto-convert negative values to positive for liability accounts
+          if (field === 'balance' && category.type === 'liability' && typeof value === 'number' && value < 0) {
+            value = Math.abs(value);
+          }
+          return { ...acc, [field]: value };
+        }
+        return acc;
+      })
     );
   };
 
@@ -760,7 +804,7 @@ function ExistingAccountsEntry({ category, accounts, previousAccounts, onAccount
         
         return (
           <div key={account.id} className="account-entry">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px 150px auto', gap: '12px', alignItems: 'end' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: category.id === 'cash' ? '1fr 120px 150px 150px auto' : '1fr 150px 150px auto', gap: '12px', alignItems: 'end' }}>
               <div>
                 <label className="form-label">Account Name</label>
                 <input
@@ -773,6 +817,19 @@ function ExistingAccountsEntry({ category, accounts, previousAccounts, onAccount
                   From previous snapshot
                 </div>
               </div>
+              {category.id === 'cash' && (
+                <div>
+                  <label className="form-label">Account Type</label>
+                  <select
+                    className="form-input"
+                    value={account.type}
+                    onChange={(e) => updateAccount(account.id, 'type', e.target.value as AccountType)}
+                  >
+                    <option value="checking">Checking</option>
+                    <option value="savings">Savings</option>
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="form-label">Previous Balance</label>
                 <div style={{ 

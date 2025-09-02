@@ -4,10 +4,11 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Questionnaire from './components/Questionnaire';
 import Charts from './components/Charts.tsx';
+import MetricsPage from './components/MetricsPage';
 
 function AppContent() {
   const { user, loading, logout } = useAuth();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'questionnaire' | 'charts'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'questionnaire' | 'charts' | 'metrics'>('dashboard');
 
   if (loading) {
     return (
@@ -41,6 +42,12 @@ function AppContent() {
                 Dashboard
               </button>
               <button 
+                onClick={() => setCurrentView('metrics')}
+                className={`btn ${currentView === 'metrics' ? 'btn-primary' : 'btn-secondary'}`}
+              >
+                Metrics
+              </button>
+              <button 
                 onClick={() => setCurrentView('charts')}
                 className={`btn ${currentView === 'charts' ? 'btn-primary' : 'btn-secondary'}`}
               >
@@ -71,6 +78,7 @@ function AppContent() {
 
       <main className="container">
         {currentView === 'dashboard' && <Dashboard />}
+        {currentView === 'metrics' && <MetricsPage />}
         {currentView === 'charts' && <Charts />}
         {currentView === 'questionnaire' && (
           <Questionnaire onComplete={() => setCurrentView('dashboard')} />

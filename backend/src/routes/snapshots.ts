@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { database } from '../database/connection.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { AuthRequest, Snapshot, Account, DbSnapshot } from '../types/index.js';
+import { AuthRequest, Snapshot, Account, DbSnapshot, AccountType } from '../types/index.js';
 import { calculateMetrics } from '../utils/metrics.js';
 import { computeTotals } from '../utils/finance.js';
 
@@ -151,11 +151,30 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       [userId, date]
     );
 
+    // Get previous accounts if previous snapshot exists
+    let previousAccounts: Account[] | undefined = undefined;
+    if (previousSnapshot) {
+      const previousAccountsData = await database.all<any>(
+        'SELECT * FROM accounts WHERE snapshot_id = ?',
+        [previousSnapshot.id]
+      );
+      previousAccounts = previousAccountsData.map(row => ({
+        id: row.id,
+        name: row.name,
+        type: row.type as AccountType,
+        balance: row.balance,
+        categoryId: row.category_id,
+        userId: row.user_id,
+        snapshotId: row.snapshot_id
+      }));
+    }
+
     const metrics = calculateMetrics({
       currentNetWorth: totalNetWorth,
       previousNetWorth: previousSnapshot?.total_net_worth,
       hoursInMonth,
-      accounts
+      accounts,
+      previousAccounts
     });
 
     await database.run(
