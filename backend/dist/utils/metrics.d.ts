@@ -4,6 +4,7 @@ interface MetricsInput {
     previousNetWorth?: number;
     hoursInMonth: number;
     accounts: Account[];
+    previousAccounts?: Account[];
 }
 interface CalculatedMetrics {
     monthlyGain?: number;

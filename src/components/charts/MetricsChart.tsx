@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { Snapshot } from '../../types';
+import { buildCategoriesById, calculateConsistentMetrics } from '../../utils/finance';
 // no totals needed here currently
 
 interface MetricsChartProps {
@@ -27,15 +28,22 @@ export default function MetricsChart({ snapshots }: MetricsChartProps) {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const data: DataPoint[] = [...snapshots]
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .filter(snapshot => snapshot.metadata && snapshot.metadata.dollarsPerHour !== undefined)
-      .map(snapshot => ({
-        date: new Date(snapshot.date),
-        dollarsPerHour: snapshot.metadata.dollarsPerHour || 0,
-        monthlyGain: snapshot.metadata.monthlyGain || 0,
-        portfolioChange: snapshot.metadata.portfolioChange || 0
-      }));
+    const categoriesById = buildCategoriesById();
+    const sortedSnapshots = [...snapshots].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    const data: DataPoint[] = sortedSnapshots
+      .map((snapshot, index) => {
+        const previousSnapshot = index > 0 ? sortedSnapshots[index - 1] : undefined;
+        const consistentMetrics = calculateConsistentMetrics(snapshot, previousSnapshot, categoriesById);
+        
+        return {
+          date: new Date(snapshot.date),
+          dollarsPerHour: consistentMetrics.dollarsPerHour || 0,
+          monthlyGain: consistentMetrics.monthlyGain || 0,
+          portfolioChange: consistentMetrics.portfolioChange || 0
+        };
+      })
+      .filter(d => d.dollarsPerHour !== 0); // Only show data points where we have calculated values
 
     // Nothing to do with totals here directly, but keeping computeTotals available
 
