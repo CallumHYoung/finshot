@@ -94,7 +94,7 @@ export interface MetricModuleProps {
 export interface DashboardModule {
   id: string;
   title: string;
-  component: React.ComponentType<MetricModuleProps>;
+  componentId: string; // Changed from component reference to ID string
   enabled: boolean;
   position: number;
   size: 'small' | 'medium' | 'large';

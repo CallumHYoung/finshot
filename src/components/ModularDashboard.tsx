@@ -1,24 +1,39 @@
 import { useState, useEffect } from 'react';
-import { DashboardModule, Snapshot } from '../types';
-// Testing imports one by one to identify the problematic component
+import { DashboardModule, Snapshot, MetricModuleProps } from '../types';
 import EmergencyFundModule from './metrics/EmergencyFundModule';
 import AssetAllocationModule from './metrics/AssetAllocationModule';
 import SavingsRateModule from './metrics/SavingsRateModule';
 import FinancialIndependenceModule from './metrics/FinancialIndependenceModule';
-// import DebtToIncomeModule from './metrics/DebtToIncomeModule';
+import DebtToIncomeModule from './metrics/DebtToIncomeModule';
 import './metrics/MetricModules.css';
 
-// Debug: Check if all components are imported correctly
-console.log('Component imports:', {
-  // DebtToIncomeModule,
-  EmergencyFundModule,
-  AssetAllocationModule,
-  SavingsRateModule,
-  FinancialIndependenceModule
-});
+// Component mapping to resolve component IDs to actual components
+const COMPONENT_MAP: Record<string, React.ComponentType<MetricModuleProps>> = {
+  'emergency-fund': EmergencyFundModule,
+  'asset-allocation': AssetAllocationModule,
+  'savings-rate': SavingsRateModule,
+  'debt-to-income': DebtToIncomeModule,
+  'financial-independence': FinancialIndependenceModule,
+};
 
-// Temporary placeholder for testing
-const DebtToIncomeModule = () => <div>DebtToIncomeModule placeholder</div>;
+// Function to get component by ID
+const getComponentById = (componentId: string) => {
+  console.log('Looking for component with ID:', componentId, 'Type:', typeof componentId);
+  
+  // Handle undefined or invalid componentId
+  if (!componentId || typeof componentId !== 'string' || componentId === 'undefined') {
+    console.error(`Invalid componentId: "${componentId}"`);
+    return null;
+  }
+  
+  const Component = COMPONENT_MAP[componentId];
+  if (!Component) {
+    console.error(`Component with ID "${componentId}" not found`);
+    console.log('Available component IDs:', Object.keys(COMPONENT_MAP));
+    return null;
+  }
+  return Component;
+};
 
 interface ModularDashboardProps {
   snapshots: Snapshot[];
@@ -28,7 +43,7 @@ const DEFAULT_MODULES: DashboardModule[] = [
   {
     id: 'emergency-fund',
     title: 'Emergency Fund Coverage',
-    component: EmergencyFundModule,
+    componentId: 'emergency-fund',
     enabled: true,
     position: 0,
     size: 'medium'
@@ -36,7 +51,7 @@ const DEFAULT_MODULES: DashboardModule[] = [
   {
     id: 'asset-allocation',
     title: 'Asset Allocation',
-    component: AssetAllocationModule,
+    componentId: 'asset-allocation',
     enabled: true,
     position: 1,
     size: 'medium'
@@ -44,7 +59,7 @@ const DEFAULT_MODULES: DashboardModule[] = [
   {
     id: 'savings-rate',
     title: 'Savings Rate',
-    component: SavingsRateModule,
+    componentId: 'savings-rate',
     enabled: true,
     position: 2,
     size: 'medium'
@@ -52,7 +67,7 @@ const DEFAULT_MODULES: DashboardModule[] = [
   {
     id: 'debt-to-income',
     title: 'Debt-to-Income Ratio',
-    component: DebtToIncomeModule,
+    componentId: 'debt-to-income',
     enabled: false,
     position: 3,
     size: 'medium'
@@ -60,7 +75,7 @@ const DEFAULT_MODULES: DashboardModule[] = [
   {
     id: 'financial-independence',
     title: 'Financial Independence',
-    component: FinancialIndependenceModule,
+    componentId: 'financial-independence',
     enabled: true,
     position: 4,
     size: 'large'
@@ -71,7 +86,39 @@ export default function ModularDashboard({ snapshots }: ModularDashboardProps) {
   const [modules, setModules] = useState<DashboardModule[]>(() => {
     // Load from localStorage if available
     const stored = localStorage.getItem('dashboard-modules');
-    return stored ? JSON.parse(stored) : DEFAULT_MODULES;
+    console.log('Raw stored data:', stored);
+    if (stored) {
+      try {
+        const parsedModules = JSON.parse(stored);
+        console.log('Parsed modules:', parsedModules);
+        
+        // Check if this is the old format or has invalid data
+        if (parsedModules.length > 0) {
+          const hasInvalidData = parsedModules.some((module: any) => {
+            // Check for old format (component property) or missing/invalid componentId
+            return (
+              module.component !== undefined || 
+              !module.componentId || 
+              module.componentId === 'undefined' ||
+              typeof module.componentId !== 'string'
+            );
+          });
+          
+          if (hasInvalidData) {
+            console.log('Old format or invalid data detected, using defaults');
+            localStorage.removeItem('dashboard-modules');
+            return DEFAULT_MODULES;
+          }
+        }
+        return parsedModules;
+      } catch {
+        console.log('Failed to parse stored modules, using defaults');
+        localStorage.removeItem('dashboard-modules');
+        return DEFAULT_MODULES;
+      }
+    }
+    console.log('No stored data, using defaults');
+    return DEFAULT_MODULES;
   });
   
   const [showCustomizer, setShowCustomizer] = useState(false);
@@ -85,6 +132,10 @@ export default function ModularDashboard({ snapshots }: ModularDashboardProps) {
   const enabledModules = modules
     .filter(module => module.enabled)
     .sort((a, b) => a.position - b.position);
+
+  // Debug: Log the modules data
+  console.log('Current modules:', modules);
+  console.log('Enabled modules:', enabledModules);
 
   const toggleModule = (id: string) => {
     setModules(prev => prev.map(module => 
@@ -123,6 +174,8 @@ export default function ModularDashboard({ snapshots }: ModularDashboardProps) {
   };
 
   const resetToDefaults = () => {
+    console.log('Resetting to defaults');
+    localStorage.removeItem('dashboard-modules');
     setModules(DEFAULT_MODULES);
   };
 
@@ -159,6 +212,17 @@ export default function ModularDashboard({ snapshots }: ModularDashboardProps) {
           <p>Track the metrics that matter most to your financial health</p>
         </div>
         <div className="dashboard-actions">
+          <button 
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+            className="btn btn-danger"
+            style={{ marginRight: '10px' }}
+            title="Clear all localStorage and reload (dev helper)"
+          >
+            🗑️ Clear Storage
+          </button>
           <button 
             onClick={() => setShowCustomizer(!showCustomizer)}
             className="btn btn-secondary"
@@ -210,18 +274,17 @@ export default function ModularDashboard({ snapshots }: ModularDashboardProps) {
       <div className="metrics-grid">
         {enabledModules.length > 0 ? (
           enabledModules.map(module => {
-            const Component = module.component;
+            const Component = getComponentById(module.componentId);
             
-            // Debug: Check if component is undefined
+            // Check if component was found
             if (!Component) {
-              console.error(`Component for module ${module.id} is undefined`);
               return (
                 <div key={module.id} className="metric-module">
                   <div className="metric-header">
                     <h3>Error loading {module.title}</h3>
                   </div>
                   <div className="metric-content">
-                    Component for {module.id} is undefined
+                    Component "{module.componentId}" not found
                   </div>
                 </div>
               );
