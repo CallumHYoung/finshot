@@ -51,31 +51,9 @@ export default function EmergencyFundModule({ snapshots, className, onRemove, on
 
   const data = calculateEmergencyFund();
 
-  const getStatusColor = (monthsCovered: number) => {
-    if (monthsCovered >= 6) return "#10b981"; // Green - Excellent
-    if (monthsCovered >= 3) return "#f59e0b"; // Yellow - Good
-    if (monthsCovered >= 1) return "#ef4444"; // Red - Poor
-    return "#7f1d1d"; // Dark red - Critical
-  };
 
-  const getStatusText = (monthsCovered: number) => {
-    if (monthsCovered >= 6) return "Excellent";
-    if (monthsCovered >= 3) return "Good";
-    if (monthsCovered >= 1) return "Fair";
-    return "Critical";
-  };
 
-  const getRecommendation = (monthsCovered: number, shortfall: number) => {
-    if (monthsCovered >= 6) {
-      return "✅ You have a solid emergency fund! Consider investing excess cash.";
-    } else if (monthsCovered >= 3) {
-      return `💡 You're halfway there! Try to save an additional $${shortfall.toLocaleString()}.`;
-    } else if (monthsCovered >= 1) {
-      return `⚠️ Build your emergency fund. You need $${shortfall.toLocaleString()} more.`;
-    } else {
-      return `🚨 Critical: Start building an emergency fund immediately. Target: $${shortfall.toLocaleString()}.`;
-    }
-  };
+
 
   return (
     <div className={`metric-module ${className || ''}`}>
@@ -109,8 +87,7 @@ export default function EmergencyFundModule({ snapshots, className, onRemove, on
                   <div 
                     className="progress-bar-fill" 
                     style={{ 
-                      width: `${data.progressPercentage}%`,
-                      backgroundColor: getStatusColor(data.monthsCovered)
+                      width: `${data.progressPercentage}%`
                     }}
                   />
                   <div className="progress-markers">
@@ -132,7 +109,7 @@ export default function EmergencyFundModule({ snapshots, className, onRemove, on
                   <span style={{ 
                     fontSize: '28px', 
                     fontWeight: 'bold',
-                    color: getStatusColor(data.monthsCovered)
+                    color: '#10b981'
                   }}>
                     {data.monthsCovered.toFixed(1)}
                   </span>
@@ -144,9 +121,6 @@ export default function EmergencyFundModule({ snapshots, className, onRemove, on
             </div>
             
             <div className="metric-details">
-              <div className="metric-status" style={{ color: getStatusColor(data.monthsCovered) }}>
-                Status: {getStatusText(data.monthsCovered)}
-              </div>
               <div className="metric-breakdown">
                 <div>Liquid Assets: ${data.liquidAssets.toLocaleString()}</div>
                 <div>Est. Monthly Expenses: ${data.estimatedMonthlyExpenses.toLocaleString()}</div>
@@ -157,9 +131,7 @@ export default function EmergencyFundModule({ snapshots, className, onRemove, on
                   </div>
                 )}
               </div>
-              <div className="metric-recommendation">
-                {getRecommendation(data.monthsCovered, data.shortfall)}
-              </div>
+
             </div>
           </>
         ) : (

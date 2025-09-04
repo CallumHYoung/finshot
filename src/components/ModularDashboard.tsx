@@ -5,6 +5,7 @@ import AssetAllocationModule from './metrics/AssetAllocationModule';
 import SavingsRateModule from './metrics/SavingsRateModule';
 import FinancialIndependenceModule from './metrics/FinancialIndependenceModule';
 import DebtToIncomeModule from './metrics/DebtToIncomeModule';
+import InsightsModule from './metrics/InsightsModule';
 import './metrics/MetricModules.css';
 
 // Component mapping to resolve component IDs to actual components
@@ -226,8 +227,21 @@ export default function ModularDashboard({ snapshots }: ModularDashboardProps) {
           <button 
             onClick={() => setShowCustomizer(!showCustomizer)}
             className="btn btn-secondary"
+            style={{ marginRight: '10px' }}
           >
             🎛️ Customize
+          </button>
+          <button 
+            onClick={() => {
+              const insightsModule = document.querySelector('.insights-module');
+              if (insightsModule) {
+                insightsModule.classList.toggle('expanded');
+              }
+            }}
+            className="btn btn-primary"
+            title="Toggle Insights Panel"
+          >
+            💡 Insights
           </button>
         </div>
       </div>
@@ -321,6 +335,12 @@ export default function ModularDashboard({ snapshots }: ModularDashboardProps) {
           </div>
         )}
       </div>
+
+      {/* Insights Module - Fixed Position Sidebar */}
+      <InsightsModule 
+        snapshots={snapshots}
+        enabledModules={enabledModules}
+      />
 
       {enabledModules.length > 0 && (
         <div className="dashboard-footer">

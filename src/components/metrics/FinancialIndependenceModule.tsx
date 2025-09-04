@@ -87,19 +87,7 @@ export default function FinancialIndependenceModule({ snapshots, className, onRe
     { label: "Fat FI", amount: target * 1.5, description: "Comfortable lifestyle maintained" }
   ];
 
-  const getRecommendation = (data: any) => {
-    if (data.progressPercentage >= 100) {
-      return "🎉 Congratulations! You've achieved financial independence!";
-    } else if (data.progressPercentage >= 75) {
-      return "🚀 You're so close! Stay the course for just a bit longer.";
-    } else if (data.progressPercentage >= 50) {
-      return "💪 Great progress! You're over halfway to financial independence.";
-    } else if (data.progressPercentage >= 25) {
-      return "📈 Solid foundation! Consider increasing your savings rate to accelerate progress.";
-    } else {
-      return "🌱 Every journey starts with a single step. Focus on building your savings rate!";
-    }
-  };
+
 
   return (
     <div className={`metric-module ${className || ''}`}>
@@ -196,9 +184,7 @@ export default function FinancialIndependenceModule({ snapshots, className, onRe
                 </div>
               </div>
 
-              <div className="metric-recommendation">
-                {getRecommendation(data)}
-              </div>
+
             </div>
           </>
         ) : (

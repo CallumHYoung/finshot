@@ -135,19 +135,7 @@ export default function DebtToIncomeModule({ snapshots, className, onRemove, onE
 
   const data = calculateDebtToIncomeRatio();
 
-  const getStatusText = (ratio: number) => {
-    if (ratio <= 20) return "Excellent";
-    if (ratio <= 36) return "Good";
-    if (ratio <= 50) return "Fair";
-    return "Poor";
-  };
 
-  const getStatusColor = (ratio: number) => {
-    if (ratio <= 20) return "#10b981";
-    if (ratio <= 36) return "#f59e0b";
-    if (ratio <= 50) return "#ef4444";
-    return "#7f1d1d";
-  };
 
   return (
     <div className={`metric-module ${className || ''}`}>
@@ -179,19 +167,12 @@ export default function DebtToIncomeModule({ snapshots, className, onRemove, onE
               <svg ref={svgRef}></svg>
             </div>
             <div className="metric-details">
-              <div className="metric-status" style={{ color: getStatusColor(data.ratio) }}>
-                Status: {getStatusText(data.ratio)}
-              </div>
               <div className="metric-breakdown">
                 <div>Total Liabilities: ${data.totalLiabilities.toLocaleString()}</div>
                 <div>Est. Monthly Debt: ${data.monthlyDebt.toLocaleString()}</div>
                 <div>Est. Monthly Income: ${data.monthlyIncome.toLocaleString()}</div>
               </div>
-              <div className="metric-recommendation">
-                {data.ratio <= 36 ? 
-                  "✅ Your debt-to-income ratio is healthy" : 
-                  "⚠️ Consider reducing debt or increasing income"}
-              </div>
+
             </div>
           </>
         ) : (

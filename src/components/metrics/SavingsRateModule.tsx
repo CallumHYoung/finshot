@@ -134,31 +134,9 @@ export default function SavingsRateModule({ snapshots, className, onRemove, onEd
 
   const data = calculateSavingsRate();
 
-  const getStatusColor = (rate: number) => {
-    if (rate >= 20) return "#10b981"; // Green - Excellent
-    if (rate >= 10) return "#f59e0b"; // Yellow - Good  
-    if (rate >= 5) return "#ef4444";  // Red - Fair
-    return "#7f1d1d"; // Dark red - Poor
-  };
 
-  const getStatusText = (rate: number) => {
-    if (rate >= 20) return "Excellent";
-    if (rate >= 10) return "Good";
-    if (rate >= 5) return "Fair";
-    return "Needs Improvement";
-  };
 
-  const getRecommendation = (rate: number) => {
-    if (rate >= 20) {
-      return "🌟 Outstanding savings rate! You're on track for early retirement.";
-    } else if (rate >= 10) {
-      return "✅ Good savings rate! Consider increasing to 20% for faster wealth building.";
-    } else if (rate >= 5) {
-      return "💡 Aim to increase your savings rate to at least 10% of income.";
-    } else {
-      return "⚠️ Focus on reducing expenses and increasing savings. Start with 5%.";
-    }
-  };
+
 
   return (
     <div className={`metric-module ${className || ''}`}>
@@ -189,7 +167,7 @@ export default function SavingsRateModule({ snapshots, className, onRemove, onEd
             <div className="metric-main-stat">
               <div 
                 className="metric-big-number" 
-                style={{ color: getStatusColor(data.current) }}
+                style={{ color: '#10b981' }}
               >
                 {data.current.toFixed(1)}%
               </div>
@@ -203,17 +181,12 @@ export default function SavingsRateModule({ snapshots, className, onRemove, onEd
             </div>
             
             <div className="metric-details">
-              <div className="metric-status" style={{ color: getStatusColor(data.current) }}>
-                Status: {getStatusText(data.current)}
-              </div>
               <div className="metric-breakdown">
                 <div>Average Rate: {data.average.toFixed(1)}%</div>
                 <div>Est. Monthly Income: ${data.latestIncome.toLocaleString()}</div>
                 <div>Monthly Savings: ${data.latestSavings.toLocaleString()}</div>
               </div>
-              <div className="metric-recommendation">
-                {getRecommendation(data.current)}
-              </div>
+
             </div>
           </>
         ) : (

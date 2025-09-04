@@ -159,21 +159,7 @@ export default function AssetAllocationModule({ snapshots, className, onRemove, 
     otherAssets: "💎 Other Assets"
   };
 
-  const getRecommendation = (allocation: any) => {
-    const cash = allocation.find((a: any) => a.category === 'cash')?.value || 0;
-    const investments = allocation.find((a: any) => a.category === 'investments')?.value || 0;
-    const retirement = allocation.find((a: any) => a.category === 'retirement')?.value || 0;
-    
-    if (cash > 30) {
-      return "💡 Consider investing some excess cash for better long-term growth.";
-    } else if (investments + retirement < 60) {
-      return "📈 Consider increasing your investment and retirement allocations.";
-    } else if (cash < 5) {
-      return "⚠️ Consider maintaining more cash for liquidity and emergencies.";
-    } else {
-      return "✅ Your asset allocation looks well-balanced!";
-    }
-  };
+
 
   return (
     <div className={`metric-module ${className || ''}`}>
@@ -230,9 +216,7 @@ export default function AssetAllocationModule({ snapshots, className, onRemove, 
               <div className="metric-summary">
                 <div>Total Assets: ${data.totalAssets.toLocaleString()}</div>
               </div>
-              <div className="metric-recommendation">
-                {getRecommendation(data.allocation)}
-              </div>
+
             </div>
           </>
         ) : (
